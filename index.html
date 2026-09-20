@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05070d">
+  <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mines">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MINES</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  min-height:100vh;
+  font-family:Arial,Helvetica,sans-serif;
+  background:
+    radial-gradient(circle at top,#202b45 0%,#0b1020 45%,#05070d 100%);
+  color:white;
+  padding:15px;
+}
+
+.app{
+  width:100%;
+  max-width:480px;
+  margin:auto;
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.logo{
+  font-size:25px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.logo span{
+  color:#ffc107;
+}
+
+.balance{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
+  padding:10px 13px;
+  border-radius:14px;
+  font-weight:bold;
+  font-size:14px;
+}
+
+/* HERO */
+.hero{
+  background:linear-gradient(145deg,#18233d,#0d1427);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.25);
+}
+
+.hero-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.hero-label{
+  color:#9ba8c2;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.multiplier{
+  font-size:27px;
+  font-weight:900;
+  color:#ffc107;
+}
+
+.gain{
+  margin-top:5px;
+  font-size:22px;
+  font-weight:900;
+}
+
+.progress-box{
+  margin-top:15px;
+}
+
+.progress-info{
+  display:flex;
+  justify-content:space-between;
+  color:#9ba8c2;
+  font-size:11px;
+  margin-bottom:7px;
+}
+
+.progress{
+  height:8px;
+  background:#080c15;
+  border-radius:20px;
+  overflow:hidden;
+}
+
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#00e5ff,#00ff88);
+  border-radius:20px;
+  transition:.3s;
+}
+
+/* CONTROLS */
+.control-card{
+  background:rgba(16,23,40,.9);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:12px;
+}
+
+.control-title{
+  color:#9ba8c2;
+  font-size:11px;
+  font-weight:bold;
+  margin-bottom:10px;
+  text-transform:uppercase;
+}
+
+.options{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.option{
+  flex:1;
+  min-width:55px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#111827;
+  color:white;
+  padding:11px 8px;
+  border-radius:11px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.option.active{
+  background:linear-gradient(135deg,#ffc107,#ff9800);
+  color:#111;
+  border-color:#ffc107;
+  box-shadow:0 5px 15px rgba(255,193,7,.22);
+}
+
+.option:active{
+  transform:scale(.95);
+}
+
+/* GRID */
+.game-card{
+  background:linear-gradient(145deg,#111a2d,#09101e);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:22px;
+  padding:14px;
+  margin-top:14px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7px;
+}
+
+.cell{
+  aspect-ratio:1;
+  border:0;
+  border-radius:12px;
+  background:
+    linear-gradient(145deg,#1d2a43,#101827);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.05),
+    0 4px 8px rgba(0,0,0,.25);
+  color:white;
+  font-size:22px;
+  cursor:pointer;
+  transition:.15s;
+}
+
+.cell:active{
+  transform:scale(.93);
+}
+
+.cell.safe{
+  background:linear-gradient(145deg,#123e43,#0c252b);
+  box-shadow:
+    inset 0 0 15px rgba(0,255,200,.12),
+    0 0 12px rgba(0,255,200,.08);
+}
+
+.cell.mine{
+  background:linear-gradient(145deg,#4b1620,#240b11);
+  box-shadow:0 0 15px rgba(255,50,70,.18);
+}
+
+.cell.disabled{
+  cursor:default;
+}
+
+/* ANIMATIONS */
+@keyframes safeReveal{
+  0%{
+    transform:scale(.65) rotate(-8deg);
+    opacity:0;
+    box-shadow:0 0 0 rgba(0,255,200,0);
+  }
+
+  45%{
+    transform:scale(1.18) rotate(4deg);
+    opacity:1;
+  }
+
+  70%{
+    transform:scale(.96) rotate(-2deg);
+  }
+
+  100%{
+    transform:scale(1) rotate(0);
+    opacity:1;
+    box-shadow:
+      inset 0 0 18px rgba(0,255,200,.16),
+      0 0 18px rgba(0,255,200,.14);
+  }
+}
+
+@keyframes iconPop{
+  0%{transform:scale(.2)}
+  70%{transform:scale(1.25)}
+  100%{transform:scale(1)}
+}
+
+@keyframes mineBoom{
+  0%{
+    transform:scale(.7);
+    opacity:.5;
+  }
+
+  25%{
+    transform:scale(1.25) rotate(-8deg);
+  }
+
+  50%{
+    transform:scale(.9) rotate(8deg);
+  }
+
+  75%{
+    transform:scale(1.12) rotate(-4deg);
+  }
+
+  100%{
+    transform:scale(1) rotate(0);
+    opacity:1;
+  }
+}
+
+.safe-anim{
+  animation:safeReveal .35s ease;
+}
+
+.icon-pop{
+  animation:iconPop .3s ease;
+}
+
+.mine-anim{
+  animation:mineBoom .4s ease;
+}
+
+/* STATUS */
+.status{
+  text-align:center;
+  min-height:22px;
+  margin:13px 0;
+  color:#aeb9cc;
+  font-size:13px;
+  font-weight:bold;
+}
+
+/* BUTTONS */
+.main-buttons{
+  display:flex;
+  gap:9px;
+}
+
+.start-btn,
+.cashout-btn{
+  width:100%;
+  border:0;
+  border-radius:14px;
+  padding:14px;
+  font-size:15px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.start-btn{
+  background:linear-gradient(135deg,#00e676,#00bfa5);
+  color:#03120d;
+  box-shadow:0 8px 20px rgba(0,230,118,.18);
+}
+
+.cashout-btn{
+  background:linear-gradient(135deg,#ffc107,#ff9800);
+  color:#15100a;
+  display:none;
+}
+
+.start-btn:active,
+.cashout-btn:active{
+  transform:scale(.97);
+}
+
+.start-btn:disabled,
+.cashout-btn:disabled{
+  opacity:.45;
+}
+
+/* HISTORY */
+.history{
+  margin-top:15px;
+  background:rgba(16,23,40,.9);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:20px;
+  padding:15px;
+}
+
+.history-title{
+  font-size:15px;
+  font-weight:900;
+  margin-bottom:11px;
+}
+
+.history-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.history-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#0d1423;
+  border-radius:12px;
+  padding:10px;
+  animation:historyIn .3s ease;
+}
+
+@keyframes historyIn{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.history-left{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.history-result{
+  font-weight:900;
+  font-size:13px;
+}
+
+.history-detail{
+  color:#8793a9;
+  font-size:10px;
+}
+
+.history-right{
+  text-align:right;
+}
+
+.history-gain{
+  font-weight:900;
+  font-size:13px;
+}
+
+.history-mult{
+  color:#ffc107;
+  font-size:10px;
+  margin-top:3px;
+}
+
+.win{
+  color:#00e676;
+}
+
+.loss{
+  color:#ff5264;
+}
+
+.empty-history{
+  text-align:center;
+  color:#667187;
+  font-size:12px;
+  padding:10px;
+}
+
+/* FOOTER */
+.footer{
+  text-align:center;
+  color:#667187;
+  font-size:10px;
+  margin:15px 0 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="logo">💣 <span>MINES</span></div>
+    <div class="balance" id="balance">10 000 Gdes</div>
+  </div>
+
+  <div class="hero">
+
+    <div class="hero-top">
+      <div>
+        <div class="hero-label">GAIN POTENTIEL</div>
+        <div class="gain" id="potentialGain">10 Gdes</div>
+      </div>
+
+      <div class="multiplier" id="multiplier">×1.00</div>
+    </div>
+
+    <div class="progress-box">
+      <div class="progress-info">
+        <span>Cases sûres</span>
+        <span id="progressText">0 / 22</span>
+      </div>
+
+      <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="control-card">
+
+    <div class="control-title">Mise</div>
+
+    <div class="options" id="miseOptions">
+
+      <button class="option active" data-value="10">10</button>
+      <button class="option" data-value="20">20</button>
+      <button class="option" data-value="30">30</button>
+      <button class="option" data-value="40">40</button>
+      <button class="option" data-value="50">50</button>
+      <button class="option" data-value="100">100</button>
+
+    </div>
+
+  </div>
+
+  <div class="control-card">
+
+    <div class="control-title">Nombre de mines</div>
+
+    <div class="options" id="mineOptions">
+
+      <button class="option active" data-value="3">3</button>
+      <button class="option" data-value="5">5</button>
+      <button class="option" data-value="7">7</button>
+      <button class="option" data-value="10">10</button>
+
+    </div>
+
+  </div>
+
+  <div class="game-card">
+
+    <div class="grid" id="grid"></div>
+
+    <div class="status" id="status">
+      Choisis ta mise puis commence une partie.
+    </div>
+
+    <div class="main-buttons">
+
+      <button class="start-btn" id="startBtn">
+        COMMENCER
+      </button>
+
+      <button class="cashout-btn" id="cashoutBtn">
+        ENCAISSER
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="history">
+
+    <div class="history-title">
+      📜 Historique
+    </div>
+
+    <div class="history-list" id="historyList"></div>
+
+  </div>
+
+  <div class="footer">
+    Mode virtuel • Aucun argent réel
+  </div>
+
+</div>
+
+<script>
+
+/* =========================
+   VARIABLES
+========================= */
+
+let balance = 10000;
+let selectedMise = 10;
+let selectedMines = 3;
+
+let gameStarted = false;
+let gameOver = false;
+
+let minePositions = [];
+let openedSafe = 0;
+
+const totalCells = 25;
+
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const balanceEl = document.getElementById("balance");
+const potentialGainEl = document.getElementById("potentialGain");
+const multiplierEl = document.getElementById("multiplier");
+
+const progressTextEl = document.getElementById("progressText");
+const progressBarEl = document.getElementById("progressBar");
+
+const statusEl = document.getElementById("status");
+
+const startBtn = document.getElementById("startBtn");
+const cashoutBtn = document.getElementById("cashoutBtn");
+
+const gridEl = document.getElementById("grid");
+
+const historyListEl = document.getElementById("historyList");
+
+
+/* =========================
+   HISTORIQUE
+========================= */
+
+let history =
+  JSON.parse(localStorage.getItem("minesHistory")) || [];
+
+
+/* =========================
+   CHARGER SOLDE
+========================= */
+
+const savedBalance =
+  localStorage.getItem("minesBalance");
+
+if(savedBalance !== null){
+  balance = Number(savedBalance);
+}
+
+
+/* =========================
+   CHARGER MISE
+========================= */
+
+const savedMise =
+  localStorage.getItem("minesMise");
+
+if(savedMise !== null){
+  selectedMise = Number(savedMise);
+}
+
+
+/* =========================
+   CHARGER MINES
+========================= */
+
+const savedMines =
+  localStorage.getItem("minesCount");
+
+if(savedMines !== null){
+  selectedMines = Number(savedMines);
+}
+
+
+/* =========================
+   SOLDE
+========================= */
+
+function updateBalance(){
+
+  balanceEl.textContent =
+    balance.toLocaleString("fr-FR") +
+    " Gdes";
+
+  localStorage.setItem(
+    "minesBalance",
+    balance
+  );
+
+}
+
+
+/* =========================
+   CREER LA GRILLE
+========================= */
+
+function createGrid(){
+
+  gridEl.innerHTML = "";
+
+  for(let i = 0; i < totalCells; i++){
+
+    const cell =
+      document.createElement("button");
+
+    cell.className = "cell";
+
+    cell.dataset.index = i;
+
+    cell.addEventListener(
+      "click",
+      handleCellClick
+    );
+
+    gridEl.appendChild(cell);
+
+  }
+
+}
+
+
+/* =========================
+   GENERER LES MINES
+========================= */
+
+function generateMines(){
+
+  minePositions = [];
+
+  while(
+    minePositions.length <
+    selectedMines
+  ){
+
+    const random =
+      Math.floor(
+        Math.random() * totalCells
+      );
+
+    if(
+      !minePositions.includes(random)
+    ){
+
+      minePositions.push(random);
+
+    }
+
+  }
+
+}
+
+
+/* =========================
+   MULTIPLICATEUR
+========================= */
+
+function calculateMultiplier(){
+
+  const totalSafe =
+    totalCells - selectedMines;
+
+  return (
+    1 +
+    (
+      openedSafe /
+      totalSafe
+    ) *
+    selectedMines *
+    0.35
+  );
+
+}
+
+
+/* =========================
+   UPDATE GAIN
+========================= */
+
+function updateGameInfo(){
+
+  const multiplier =
+    calculateMultiplier();
+
+  multiplierEl.textContent =
+    "×" + multiplier.toFixed(2);
+
+  const gain =
+    Math.floor(
+      selectedMise * multiplier
+    );
+
+  potentialGainEl.textContent =
+    gain.toLocaleString("fr-FR") +
+    " Gdes";
+
+  const totalSafe =
+    totalCells - selectedMines;
+
+  progressTextEl.textContent =
+    openedSafe +
+    " / " +
+    totalSafe;
+
+  const percentage =
+    (openedSafe / totalSafe) * 100;
+
+  progressBarEl.style.width =
+    percentage + "%";
+
+}
+
+
+/* =========================
+   SELECTION MISE
+========================= */
+
+document
+.querySelectorAll("#miseOptions .option")
+.forEach(button => {
+
+  button.addEventListener(
+    "click",
+    function(){
+
+      if(gameStarted) return;
+
+      document
+      .querySelectorAll(
+        "#miseOptions .option"
+      )
+      .forEach(btn =>
+        btn.classList.remove("active")
+      );
+
+      this.classList.add("active");
+
+      selectedMise =
+        Number(this.dataset.value);
+
+      localStorage.setItem(
+        "minesMise",
+        selectedMise
+      );
+
+      potentialGainEl.textContent =
+        selectedMise.toLocaleString("fr-FR") +
+        " Gdes";
+
+    }
+  );
+
+});
+
+
+/* =========================
+   SELECTION MINES
+========================= */
+
+document
+.querySelectorAll("#mineOptions .option")
+.forEach(button => {
+
+  button.addEventListener(
+    "click",
+    function(){
+
+      if(gameStarted) return;
+
+      document
+      .querySelectorAll(
+        "#mineOptions .option"
+      )
+      .forEach(btn =>
+        btn.classList.remove("active")
+      );
+
+      this.classList.add("active");
+
+      selectedMines =
+        Number(this.dataset.value);
+
+      localStorage.setItem(
+        "minesCount",
+        selectedMines
+      );
+
+      progressTextEl.textContent =
+        "0 / " +
+        (totalCells - selectedMines);
+
+    }
+  );
+
+});
+
+
+/* =========================
+   DEMARRER
+========================= */
+
+startBtn.addEventListener(
+  "click",
+  startGame
+);
+
+
+function startGame(){
+
+  if(gameStarted) return;
+
+  if(balance < selectedMise){
+
+    statusEl.textContent =
+      "Solde insuffisant.";
+
+    return;
+
+  }
+
+  balance -= selectedMise;
+
+  updateBalance();
+
+  gameStarted = true;
+  gameOver = false;
+
+  openedSafe = 0;
+
+  generateMines();
+
+  createGrid();
+
+  updateGameInfo();
+
+  statusEl.textContent =
+    "Bonne chance ! Trouve les 💎.";
+
+  startBtn.disabled = true;
+
+  cashoutBtn.style.display =
+    "block";
+
+  document
+  .querySelectorAll(".option")
+  .forEach(btn =>
+    btn.style.opacity = ".5"
+  );
+
+}
+
+
+/* =========================
+   CLIQUER SUR UNE CASE
+========================= */
+
+function handleCellClick(){
+
+  if(!gameStarted || gameOver){
+    return;
+  }
+
+  const index =
+    Number(this.dataset.index);
+
+  if(
+    this.classList.contains("safe") ||
+    this.classList.contains("mine")
+  ){
+    return;
+  }
+
+
+  /* MINE */
+
+  if(
+    minePositions.includes(index)
+  ){
+
+    this.classList.add("mine");
+
+    this.textContent = "💣";
+
+    this.classList.add("mine-anim");
+
+    revealAllMines();
+
+    gameOver = true;
+    gameStarted = false;
+
+    multiplierEl.textContent =
+      "×0.00";
+
+    potentialGainEl.textContent =
+      "0 Gdes";
+
+    progressBarEl.style.width =
+      "0%";
+
+    statusEl.textContent =
+      "💥 Mine trouvée ! Mise perdue.";
+
+    cashoutBtn.style.display =
+      "none";
+
+    startBtn.disabled = false;
+
+    document
+    .querySelectorAll(".option")
+    .forEach(btn =>
+      btn.style.opacity = "1"
+    );
+
+    addHistory(
+      "PERDU",
+      0,
+      0
+    );
+
+    return;
+  }
+
+
+  /* CASE SURE */
+
+  this.classList.add("safe");
+
+  this.textContent = "💎";
+
+  this.classList.add("safe-anim");
+
+  openedSafe++;
+
+  updateGameInfo();
+
+  if(
+    openedSafe ===
+    totalCells - selectedMines
+  ){
+
+    cashout();
+
+  }else{
+
+    statusEl.textContent =
+      "💎 Case sûre ! Continue ou encaisse.";
+
+  }
+
+}
+
+
+/* =========================
+   REVELER MINES
+========================= */
+
+function revealAllMines(){
+
+  const cells =
+    document.querySelectorAll(".cell");
+
+  minePositions.forEach(index => {
+
+    const cell =
+      cells[index];
+
+    if(cell){
+
+      cell.classList.add("mine");
+
+      cell.textContent = "💣";
+
+    }
+
+  });
+
+}
+
+
+/* =========================
+   ENCAISSER
+========================= */
+
+cashoutBtn.addEventListener(
+  "click",
+  cashout
+);
+
+
+function cashout(){
+
+  if(!gameStarted || gameOver){
+    return;
+  }
+
+  const multiplier =
+    calculateMultiplier();
+
+  const gain =
+    Math.floor(
+      selectedMise * multiplier
+    );
+
+  balance += gain;
+
+  updateBalance();
+
+  gameStarted = false;
+  gameOver = true;
+
+  statusEl.textContent =
+    "🎉 Tu as encaissé " +
+    gain.toLocaleString("fr-FR") +
+    " Gdes !";
+
+  cashoutBtn.style.display =
+    "none";
+
+  startBtn.disabled = false;
+
+  document
+  .querySelectorAll(".option")
+  .forEach(btn =>
+    btn.style.opacity = "1"
+  );
+
+  addHistory(
+    "GAGNÉ",
+    gain,
+    multiplier
+  );
+
+}
+
+
+/* =========================
+   HISTORIQUE
+========================= */
+
+function addHistory(
+  result,
+  gain,
+  multiplier
+){
+
+  history.unshift({
+
+    result: result,
+
+    mise: selectedMise,
+
+    mines: selectedMines,
+
+    gain: gain,
+
+    multiplier: multiplier
+
+  });
+
+
+  if(history.length > 10){
+
+    history.pop();
+
+  }
+
+
+  localStorage.setItem(
+    "minesHistory",
+    JSON.stringify(history)
+  );
+
+
+  renderHistory();
+
+}
+
+
+/* =========================
+   AFFICHER HISTORIQUE
+========================= */
+
+function renderHistory(){
+
+  historyListEl.innerHTML = "";
+
+  if(history.length === 0){
+
+    historyListEl.innerHTML =
+      `<div class="empty-history">
+        Aucune partie jouée
+      </div>`;
+
+    return;
+
+  }
+
+
+  history.forEach(item => {
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "history-item";
+
+
+    const resultClass =
+      item.result === "PERDU"
+      ? "loss"
+      : "win";
+
+
+    div.innerHTML = `
+
+      <div class="history-left">
+
+        <div class="history-result ${resultClass}">
+          ${item.result === "PERDU" ? "💥 PERDU" : "🎉 GAGNÉ"}
+        </div>
+
+        <div class="history-detail">
+          Mise ${item.mise} Gdes • ${item.mines} mines
+        </div>
+
+      </div>
+
+      <div class="history-right">
+
+        <div class="history-gain">
+          ${item.gain.toLocaleString("fr-FR")} Gdes
+        </div>
+
+        <div class="history-mult">
+          ×${Number(item.multiplier).toFixed(2)}
+        </div>
+
+      </div>
+
+    `;
+
+
+    historyListEl.appendChild(div);
+
+  });
+
+}
+
+
+/* =========================
+   INITIALISATION
+========================= */
+
+createGrid();
+
+updateBalance();
+
+updateGameInfo();
+
+renderHistory();
+
+
+/* =========================
+   RESTAURER LES BOUTONS
+========================= */
+
+document
+.querySelectorAll(
+  "#miseOptions .option"
+)
+.forEach(button => {
+
+  if(
+    Number(button.dataset.value) ===
+    selectedMise
+  ){
+
+    document
+    .querySelectorAll(
+      "#miseOptions .option"
+    )
+    .forEach(btn =>
+      btn.classList.remove("active")
+    );
+
+    button.classList.add("active");
+
+  }
+
+});
+
+
+document
+.querySelectorAll(
+  "#mineOptions .option"
+)
+.forEach(button => {
+
+  if(
+    Number(button.dataset.value) ===
+    selectedMines
+  ){
+
+    document
+    .querySelectorAll(
+      "#mineOptions .option"
+    )
+    .forEach(btn =>
+      btn.classList.remove("active")
+    );
+
+    button.classList.add("active");
+
+  }
+
+});
+
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .then(() => console.log("Mines App prête"))
+      .catch(error => console.error("Erreur SW :", error));
+  });
+}
+</script>
+</body>
+</html>
